@@ -18,7 +18,7 @@ from ctypes import (
 
 from seistrace import Trace, TraceHeader
 
-lib = CDLL("libseissegy.so")
+lib = CDLL("/usr/local/lib64/libseissegy.so")
 
 (
     ERR_OK,
@@ -188,11 +188,14 @@ class ISegy:
     def end_of_data(self):
         return self.__seis_isegy_end_of_data(self.__pimpl)
 
+    def close(self):
+        self.__seis_isegy_unref(self.__pimpl)
+
     def __enter__(self):
         return self
 
     def __exit__(self):
-        self.__seis_isegy_unref(self.__pimpl)
+        self.close(self)
 
     class TraceIter:
         def __init__(self, isegy):
@@ -252,6 +255,15 @@ class OSegy:
         self.__err = self.__seis_osegy_get_error(self.__pimpl)
         if code != ERR_OK:
             raise RuntimeError(self.__err.contents.message)
+
+    def close(self):
+        self.__seis_osegy_unref(self.__pimpl)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self):
+        self.close(self)
 
     def remap_trace_header(self, *args):
         for a in args:
@@ -340,11 +352,14 @@ class ISU:
     def headers(self):
         return self.HeaderIter(self)
 
+    def close(self):
+        self.__seis_isu_unref(self.__pimpl)
+
     def __enter__(self):
         return self
 
     def __exit__(self):
-        self.__seis_isu_unref(self.__pimpl)
+        self.close(self)
 
     class TraceIter:
         def __init__(self, isu):
@@ -408,6 +423,15 @@ class OSU:
         self.__seis_osu_write_trace(self.__pimpl, trc._Trace__pimpl)
         if self.__err.contents.code != ERR_OK:
             raise RuntimeError(self.__err.contents.message)
+
+    def close(self):
+        self.__seis_isu_unref(self.__pimpl)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self):
+        self.close(self)
 
 
 __ascii_to_ebcdic = lib.ascii_to_ebcdic

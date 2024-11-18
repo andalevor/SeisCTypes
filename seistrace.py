@@ -2,7 +2,7 @@ from ctypes import CDLL, POINTER, c_bool, c_char_p, c_double, c_longlong, c_void
 
 from numpy.ctypeslib import as_array
 
-lib = CDLL("libseistrace.so")
+lib = CDLL("/usr/local/lib64/libseistrace.so")
 
 
 class TraceHeader:
