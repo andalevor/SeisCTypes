@@ -163,7 +163,7 @@ class ISegy:
         ptr = self.__seis_isegy_read_trace(self.__pimpl)
         if self.__err.contents.code != ERR_OK:
             raise RuntimeError(self.__err.contents.message)
-        return Trace(pointer=ptr)
+        return Trace(ptr=ptr)
 
     def read_header(self):
         if self.__seis_isegy_end_of_data(self.__pimpl):
@@ -171,7 +171,7 @@ class ISegy:
         ptr = self.__seis_isegy_read_trace_header(self.__pimpl)
         if self.__err.contents.code != ERR_OK:
             raise RuntimeError(self.__err.contents.message)
-        return TraceHeader(pointer=ptr)
+        return TraceHeader(ptr=ptr)
 
     def get_text_headers(self):
         num = self.__seis_isegy_get_text_headers_num(self.__pimpl)
@@ -193,9 +193,7 @@ class ISegy:
         return self.__seis_isegy_end_of_data(self.__pimpl)
 
     def close(self):
-        if self.__pimpl != 0:
-            self.__seis_isegy_unref(self.pointer(self.__pimpl))
-            self.__pimpl = 0
+        self.__seis_isegy_unref(self.pointer(self.__pimpl))
 
     def __enter__(self):
         return self
@@ -349,7 +347,7 @@ class ISU:
         ptr = self.__seis_isu_read_trace(self.__pimpl)
         if self.__err.contents.code != ERR_OK:
             raise RuntimeError(self.__err.contents.message)
-        return Trace(pointer=ptr)
+        return Trace(ptr=ptr)
 
     def read_header(self):
         if self.__seis_isu_end_of_data(self.__pimpl):
@@ -357,7 +355,7 @@ class ISU:
         ptr = self.__seis_isu_read_trace_header(self.__pimpl)
         if self.__err.contents.code != ERR_OK:
             raise RuntimeError(self.__err.contents.message)
-        return TraceHeader(pointer=ptr)
+        return TraceHeader(ptr=ptr)
 
     def end_of_data(self):
         return self.__seis_isu_end_of_data(self.__pimpl)
@@ -369,9 +367,7 @@ class ISU:
         return self.HeaderIter(self)
 
     def close(self):
-        if self.__pimpl != 0:
-            self.__seis_isu_unref(self.pointer(self.__pimpl))
-            self.__pimpl = 0
+        self.__seis_isu_unref(self.pointer(self.__pimpl))
 
     def __enter__(self):
         return self
@@ -447,9 +443,7 @@ class OSU:
             raise RuntimeError(self.__err.contents.message)
 
     def close(self):
-        if self.__pimpl != 0:
-            self.__seis_osu_unref(self.pointer(self.__pimpl))
-            self.__pimpl = 0
+        self.__seis_osu_unref(self.pointer(self.__pimpl))
 
     def __enter__(self):
         return self

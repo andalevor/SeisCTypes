@@ -41,10 +41,11 @@ class TraceHeader:
     __seis_trace_header_exists.restype = c_bool
     ptr_own = True
 
-    def __init__(self, pointer=None) -> None:
-        if pointer:
+    def __init__(self, ptr=None) -> None:
+        self.pointer = pointer
+        if ptr:
             self.ptr_own = False
-            self.__pimpl = cast(pointer, POINTER(c_void_p))
+            self.__pimpl = cast(ptr, POINTER(c_void_p))
         else:
             self.__pimpl = cast(self.__seis_trace_header_new(), POINTER(c_void_p))
 
@@ -55,11 +56,8 @@ class TraceHeader:
         self.__del__()
 
     def __del__(self):
-        if self.ptr_own and self.__pimpl != 0:
-            self.__seis_trace_header_unref(
-                pointer(cast(self.__pimpl, POINTER(c_void_p)))
-            )
-            self.__pimpl = 0
+        if self.ptr_own:
+            self.__seis_trace_header_unref(self.pointer(self.__pimpl))
 
     def set(self, hdr_name, val):
         """Cast val whether to inti or to float to write header
@@ -118,9 +116,10 @@ class Trace:
     __seis_trace_get_samples_num.argtypes = [c_void_p]
     __seis_trace_get_samples_num.restype = c_longlong
 
-    def __init__(self, samp_num=None, hdr=None, pointer=None):
-        if pointer:
-            self.__pimpl = cast(pointer, POINTER(c_void_p))
+    def __init__(self, samp_num=None, hdr=None, ptr=None):
+        self.pointer = pointer
+        if ptr:
+            self.__pimpl = cast(ptr, POINTER(c_void_p))
         elif samp_num:
             if hdr:
                 self.__pimpl = cast(
@@ -139,9 +138,7 @@ class Trace:
         self.__del__()
 
     def __del__(self):
-        if self.__pimpl != 0:
-            self.__seis_trace_unref(pointer(self.__pimpl))
-            self.__pimpl = 0
+        self.__seis_trace_unref(self.pointer(self.__pimpl))
 
     def header(self):
         return TraceHeader(self.__seis_trace_get_header(self.__pimpl))
