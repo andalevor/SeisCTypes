@@ -39,9 +39,11 @@ class TraceHeader:
     __seis_trace_header_exists = lib.seis_trace_header_exists
     __seis_trace_header_exists.argtypes = [c_void_p, c_char_p]
     __seis_trace_header_exists.restype = c_bool
+    ptr_own = True
 
     def __init__(self, pointer=None) -> None:
         if pointer:
+            self.ptr_own = False
             self.__pimpl = cast(pointer, POINTER(c_void_p))
         else:
             self.__pimpl = cast(self.__seis_trace_header_new(), POINTER(c_void_p))
@@ -53,7 +55,7 @@ class TraceHeader:
         self.__del__()
 
     def __del__(self):
-        if self.__pimpl != 0:
+        if self.ptr_own and self.__pimpl != 0:
             self.__seis_trace_header_unref(
                 pointer(cast(self.__pimpl, POINTER(c_void_p)))
             )
