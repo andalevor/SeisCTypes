@@ -1,4 +1,14 @@
-from ctypes import CDLL, POINTER, c_bool, c_char_p, c_double, c_longlong, c_void_p
+from ctypes import (
+    CDLL,
+    POINTER,
+    c_bool,
+    c_char_p,
+    c_double,
+    c_longlong,
+    c_void_p,
+    cast,
+    pointer,
+)
 
 from numpy.ctypeslib import as_array
 
@@ -9,7 +19,7 @@ class TraceHeader:
     __seis_trace_header_new = lib.seis_trace_header_new
     __seis_trace_header_new.restype = c_void_p
     __seis_trace_header_unref = lib.seis_trace_header_unref
-    __seis_trace_header_unref.argtypes = [c_void_p]
+    __seis_trace_header_unref.argtypes = [POINTER(POINTER(c_void_p))]
     __seis_trace_header_set_int = lib.seis_trace_header_set_int
     __seis_trace_header_set_int.argtypes = [c_void_p, c_char_p, c_longlong]
     __seis_trace_header_set_real = lib.seis_trace_header_set_real
@@ -32,15 +42,22 @@ class TraceHeader:
 
     def __init__(self, pointer=None) -> None:
         if pointer:
-            self.__pimpl = pointer
+            self.__pimpl = cast(pointer, POINTER(c_void_p))
         else:
-            self.__pimpl = self.__seis_trace_header_new()
+            self.__pimpl = cast(self.__seis_trace_header_new(), POINTER(c_void_p))
 
     def __enter__(self):
         return self
 
-    def __exit__(self):
-        self.__seis_trace_header_unref(POINTER(self.__pimpl))
+    def __exit__(self, *exec_info):
+        self.__del__()
+
+    def __del__(self):
+        if self.__pimpl != 0:
+            self.__seis_trace_header_unref(
+                pointer(cast(self.__pimpl, POINTER(c_void_p)))
+            )
+            self.__pimpl = 0
 
     def set(self, hdr_name, val):
         """Cast val whether to inti or to float to write header
@@ -88,7 +105,7 @@ class Trace:
     __seis_trace_new_with_header.argtypes = [c_longlong, c_void_p]
     __seis_trace_new_with_header.restype = c_void_p
     __seis_trace_unref = lib.seis_trace_unref
-    __seis_trace_unref.argtypes = [c_void_p]
+    __seis_trace_unref.argtypes = [POINTER(POINTER(c_void_p))]
     __seis_trace_get_header = lib.seis_trace_get_header
     __seis_trace_get_header.argtypes = [c_void_p]
     __seis_trace_get_header.restype = c_void_p
@@ -101,20 +118,28 @@ class Trace:
 
     def __init__(self, samp_num=None, hdr=None, pointer=None):
         if pointer:
-            self.__pimpl = pointer
+            self.__pimpl = cast(pointer, POINTER(c_void_p))
         elif samp_num:
             if hdr:
-                self.__pimpl = self.__seis_trace_new_with_header(samp_num, hdr.__pimpl)
+                self.__pimpl = cast(
+                    self.__seis_trace_new_with_header(samp_num, hdr.__pimpl),
+                    POINTER(c_void_p),
+                )
             else:
-                self.__pimpl = self.__seis_trace_new(samp_num)
+                self.__pimpl = cast(self.__seis_trace_new(samp_num), POINTER(c_void_p))
         else:
             raise TypeError("Pointer or samp_num should be specified")
 
     def __enter__(self):
         return self
 
-    def __exit__(self):
-        self.__seis_trace_unref(POINTER(self.__pimpl))
+    def __exit__(self, *exec_info):
+        self.__del__()
+
+    def __del__(self):
+        if self.__pimpl != 0:
+            self.__seis_trace_unref(pointer(self.__pimpl))
+            self.__pimpl = 0
 
     def header(self):
         return TraceHeader(self.__seis_trace_get_header(self.__pimpl))

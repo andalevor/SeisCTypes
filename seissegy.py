@@ -13,7 +13,9 @@ from ctypes import (
     c_uint8,
     c_uint64,
     c_void_p,
+    cast,
     create_string_buffer,
+    pointer,
 )
 
 from seistrace import Trace, TraceHeader
@@ -103,7 +105,7 @@ class ISegy:
     __seis_isegy_new = lib.seis_isegy_new
     __seis_isegy_new.restype = c_void_p
     __seis_isegy_unref = lib.seis_isegy_unref
-    __seis_isegy_unref.argtypes = [c_void_p]
+    __seis_isegy_unref.argtypes = [POINTER(POINTER(c_void_p))]
     __seis_isegy_get_error = lib.seis_isegy_get_error
     __seis_isegy_get_error.argtypes = [c_void_p]
     __seis_isegy_get_error.restype = POINTER(SegyError)
@@ -133,7 +135,7 @@ class ISegy:
     __seis_isegy_remap_trace_header.argtypes = [c_void_p, c_char_p, c_int, c_int, c_int]
 
     def __init__(self, file_name):
-        self.__pimpl = self.__seis_isegy_new()
+        self.__pimpl = cast(self.__seis_isegy_new(), POINTER(c_void_p))
         if self.__pimpl == 0:
             raise RuntimeError("No memory")
         code = self.__seis_isegy_open(self.__pimpl, file_name.encode())
@@ -189,13 +191,18 @@ class ISegy:
         return self.__seis_isegy_end_of_data(self.__pimpl)
 
     def close(self):
-        self.__seis_isegy_unref(self.__pimpl)
+        if self.__pimpl != 0:
+            self.__seis_isegy_unref(pointer(self.__pimpl))
+            self.__pimpl = 0
 
     def __enter__(self):
         return self
 
-    def __exit__(self):
-        self.close(self)
+    def __exit__(self, *exec_info):
+        self.close()
+
+    def __del__(self):
+        self.close()
 
     class TraceIter:
         def __init__(self, isegy):
@@ -224,7 +231,7 @@ class OSegy:
     __seis_osegy_new = lib.seis_osegy_new
     __seis_osegy_new.restype = c_void_p
     __seis_osegy_unref = lib.seis_osegy_unref
-    __seis_osegy_unref.argtypes = [c_void_p]
+    __seis_osegy_unref.argtypes = [POINTER(POINTER(c_void_p))]
     __seis_osegy_get_error = lib.seis_osegy_get_error
     __seis_osegy_get_error.argtypes = [c_void_p]
     __seis_osegy_get_error.restype = POINTER(SegyError)
@@ -244,7 +251,7 @@ class OSegy:
     __seis_osegy_remap_trace_header.argtypes = [c_void_p, c_char_p, c_int, c_int, c_int]
 
     def __init__(self, file_name, text_header=None, bin_header=None):
-        self.__pimpl = self.__seis_osegy_new()
+        self.__pimpl = cast(self.__seis_osegy_new(), POINTER(c_void_p))
         if self.__pimpl == 0:
             raise RuntimeError("No memory")
         if text_header:
@@ -257,13 +264,18 @@ class OSegy:
             raise RuntimeError(self.__err.contents.message)
 
     def close(self):
-        self.__seis_osegy_unref(self.__pimpl)
+        if self.__pimpl != 0:
+            self.__seis_osegy_unref(pointer(self.__pimpl))
+            self.__pimpl = 0
 
     def __enter__(self):
         return self
 
-    def __exit__(self):
-        self.close(self)
+    def __exit__(self, *exec_info):
+        self.close()
+
+    def __del__(self):
+        self.close()
 
     def remap_trace_header(self, *args):
         for a in args:
@@ -287,7 +299,7 @@ class ISU:
     __seis_isu_new = lib.seis_isu_new
     __seis_isu_new.restype = c_void_p
     __seis_isu_unref = lib.seis_isu_unref
-    __seis_isu_unref.argtypes = [c_void_p]
+    __seis_isu_unref.argtypes = [POINTER(POINTER(c_void_p))]
     __seis_isu_get_error = lib.seis_isu_get_error
     __seis_isu_get_error.argtypes = [c_void_p]
     __seis_isu_get_error.restype = POINTER(SegyError)
@@ -308,7 +320,7 @@ class ISU:
     __seis_isu_remap_trace_header.argtypes = [c_void_p, c_char_p, c_int, c_int]
 
     def __init__(self, file_name):
-        self.__pimpl = self.__seis_isu_new()
+        self.__pimpl = cast(self.__seis_isu_new(), POINTER(c_void_p))
         if self.__pimpl == 0:
             raise RuntimeError("No memory")
         code = self.__seis_isu_open(self.__pimpl, file_name.encode())
@@ -353,13 +365,18 @@ class ISU:
         return self.HeaderIter(self)
 
     def close(self):
-        self.__seis_isu_unref(self.__pimpl)
+        if self.__pimpl != 0:
+            self.__seis_isu_unref(pointer(self.__pimpl))
+            self.__pimpl = 0
 
     def __enter__(self):
         return self
 
-    def __exit__(self):
-        self.close(self)
+    def __exit__(self, *exec_info):
+        self.close()
+
+    def __del__(self):
+        self.close()
 
     class TraceIter:
         def __init__(self, isu):
@@ -388,7 +405,7 @@ class OSU:
     __seis_osu_new = lib.seis_osu_new
     __seis_osu_new.restype = c_void_p
     __seis_osu_unref = lib.seis_osu_unref
-    __seis_osu_unref.argtypes = [c_void_p]
+    __seis_osu_unref.argtypes = [POINTER(POINTER(c_void_p))]
     __seis_osu_get_error = lib.seis_osu_get_error
     __seis_osu_get_error.argtypes = [c_void_p]
     __seis_osu_get_error.restype = POINTER(SegyError)
@@ -400,7 +417,7 @@ class OSU:
     __seis_osu_remap_trace_header.argtypes = [c_void_p, c_char_p, c_int, c_int, c_int]
 
     def __init__(self, file_name):
-        self.__pimpl = self.__seis_osu_new()
+        self.__pimpl = cast(self.__seis_osu_new(), POINTER(c_void_p))
         if self.__pimpl == 0:
             raise RuntimeError("No memory")
         code = self.__seis_osu_open(self.__pimpl, file_name.encode())
@@ -425,13 +442,18 @@ class OSU:
             raise RuntimeError(self.__err.contents.message)
 
     def close(self):
-        self.__seis_isu_unref(self.__pimpl)
+        if self.__pimpl != 0:
+            self.__seis_osu_unref(pointer(self.__pimpl))
+            self.__pimpl = 0
 
     def __enter__(self):
         return self
 
-    def __exit__(self):
-        self.close(self)
+    def __exit__(self, *exec_info):
+        self.close()
+
+    def __del__(self):
+        self.close()
 
 
 __ascii_to_ebcdic = lib.ascii_to_ebcdic
