@@ -1,3 +1,5 @@
+import os
+import subprocess
 from ctypes import (
     CDLL,
     POINTER,
@@ -12,30 +14,38 @@ from ctypes import (
 
 from numpy.ctypeslib import as_array
 
-lib = CDLL("/usr/local/lib64/libseistrace.so")
+res = subprocess.run(["pkg-config", "--libs", "seistrace"], capture_output=True)
+lib_path = os.path.join(res.stdout.decode().split()[0][2:], "libseistrace.so")
+lib = CDLL(lib_path)
 
 
 class TraceHeader:
     __seis_trace_header_new = lib.seis_trace_header_new
     __seis_trace_header_new.restype = c_void_p
+    __seis_trace_header_ref = lib.seis_trace_header_ref
+    __seis_trace_header_ref.argtypes = [POINTER(POINTER(c_void_p))]
+    __seis_trace_header_ref.restype = c_void_p
     __seis_trace_header_unref = lib.seis_trace_header_unref
     __seis_trace_header_unref.argtypes = [POINTER(POINTER(c_void_p))]
     __seis_trace_header_set_int = lib.seis_trace_header_set_int
     __seis_trace_header_set_int.argtypes = [c_void_p, c_char_p, c_longlong]
     __seis_trace_header_set_real = lib.seis_trace_header_set_real
     __seis_trace_header_set_real.argtypes = [c_void_p, c_char_p, c_double]
-    __seis_trace_header_get_int = lib.seis_trace_header_get_int
-    __seis_trace_header_get_int.argtypes = [c_void_p, c_char_p]
-    __seis_trace_header_get_int.restype = POINTER(c_longlong)
-    __seis_trace_header_get_real = lib.seis_trace_header_get_real
-    __seis_trace_header_get_real.argtypes = [c_void_p, c_char_p]
-    __seis_trace_header_get_real.restype = POINTER(c_longlong)
-    __seis_trace_header_is_int = lib.seis_trace_header_is_int
-    __seis_trace_header_is_int.argtypes = [c_void_p, c_char_p]
-    __seis_trace_header_is_int.restype = c_bool
-    __seis_trace_header_is_real = lib.seis_trace_header_is_real
-    __seis_trace_header_is_real.argtypes = [c_void_p, c_char_p]
-    __seis_trace_header_is_real.restype = c_bool
+    __seis_trace_header_get = lib.seis_trace_header_get
+    __seis_trace_header_get.argtypes = [c_void_p, c_char_p]
+    __seis_trace_header_get.restype = POINTER(c_void_p)
+    __seis_trace_header_value_is_int = lib.seis_trace_header_value_is_int
+    __seis_trace_header_value_is_int.argtypes = [c_void_p]
+    __seis_trace_header_value_is_int.restype = c_bool
+    __seis_trace_header_value_is_real = lib.seis_trace_header_value_is_real
+    __seis_trace_header_value_is_real.argtypes = [c_void_p]
+    __seis_trace_header_value_is_real.restype = c_bool
+    __seis_trace_header_value_get_int = lib.seis_trace_header_value_get_int
+    __seis_trace_header_value_get_int.argtypes = [c_void_p]
+    __seis_trace_header_value_get_int.restype = POINTER(c_longlong)
+    __seis_trace_header_value_get_real = lib.seis_trace_header_value_get_real
+    __seis_trace_header_value_get_real.argtypes = [c_void_p]
+    __seis_trace_header_value_get_real.restype = POINTER(c_double)
     __seis_trace_header_exists = lib.seis_trace_header_exists
     __seis_trace_header_exists.argtypes = [c_void_p, c_char_p]
     __seis_trace_header_exists.restype = c_bool
@@ -70,12 +80,13 @@ class TraceHeader:
             raise TypeError("Header value could be only integer" " or floating point")
 
     def get(self, hdr_name):
-        if not self.__seis_trace_header_exists(self.__pimpl, hdr_name.encode()):
+        v = self.__seis_trace_header_get(self.__pimpl, hdr_name.encode())
+        if not v:
             raise ValueError("No such header")
-        if self.__seis_trace_header_is_int(self.__pimpl, hdr_name.encode()):
-            res = self.__seis_trace_header_get_int(self.__pimpl, hdr_name.encode())
+        if self.__seis_trace_header_value_is_int(v):
+            res = self.__seis_trace_header_value_get_int(v)
         else:
-            res = self.__seis_trace_header_get_real(self.__pimpl, hdr_name.encode())
+            res = self.__seis_trace_header_value_get_real(v)
         return res[0]
 
 

@@ -1,3 +1,5 @@
+import os
+import subprocess
 from ctypes import (
     CDLL,
     POINTER,
@@ -20,7 +22,9 @@ from ctypes import (
 
 from seistrace import Trace, TraceHeader
 
-lib = CDLL("/usr/local/lib64/libseissegy.so")
+res = subprocess.run(["pkg-config", "--libs", "seissegy"], capture_output=True)
+lib_path = os.path.join(res.stdout.decode().split()[0][2:], "libseissegy.so")
+lib = CDLL(lib_path)
 
 (
     ERR_OK,
